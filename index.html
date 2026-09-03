@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-blue"> <!-- Default Blue & Black/White Dynamic Theme -->
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local Fund Management - स्थानीय वित्तीय प्रबंधन</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Subtle crisp soft-blue background pattern */
+      body {
+        background-color: #f0f6ff; /* Soft ice-blue background */
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2393c5fd' fill-opacity='0.18'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        color: #020617;
+      }
+
+      /* Global High-Contrast Text Legibility */
+      body, input, select, textarea, button {
+        font-family: 'Noto Sans Devanagari', 'Yantramanav', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        font-weight: 800;
+      }
+      th {
+        font-weight: 800;
+      }
+      label {
+        font-weight: 700;
+      }
+
+      .text-white {
+        color: #ffffff !important;
+      }
+
+      /* Pure White & Blue Clean Dynamic Theme Definitions */
+      .theme-blue, :root {
+        --color-primary-50: 239 246 255;
+        --color-primary-100: 219 234 254;
+        --color-primary-200: 191 219 254;
+        --color-primary-300: 147 197 253;
+        --color-primary-400: 96 165 250;
+        --color-primary-500: 37 99 235;
+        --color-primary-600: 29 78 216;
+        --color-primary-700: 30 64 175;
+        --color-primary-800: 30 58 138;
+        --color-primary-900: 23 37 84;
+        --color-primary-950: 15 23 42;
+      }
+      .theme-navy {
+        --color-primary-50: 240 249 255;
+        --color-primary-100: 224 242 254;
+        --color-primary-200: 186 230 253;
+        --color-primary-300: 125 211 252;
+        --color-primary-400: 56 189 248;
+        --color-primary-500: 14 165 233;
+        --color-primary-600: 2 132 199;
+        --color-primary-700: 3 105 161;
+        --color-primary-800: 7 89 133;
+        --color-primary-900: 12 74 110;
+        --color-primary-950: 8 47 73;
+      }
+      .theme-cobalt {
+        --color-primary-50: 238 242 255;
+        --color-primary-100: 224 231 255;
+        --color-primary-200: 199 210 254;
+        --color-primary-300: 165 180 252;
+        --color-primary-400: 129 140 248;
+        --color-primary-500: 99 102 241;
+        --color-primary-600: 79 70 229;
+        --color-primary-700: 67 56 202;
+        --color-primary-800: 55 48 163;
+        --color-primary-900: 49 46 129;
+        --color-primary-950: 30 27 75;
+      }
+      .theme-sky {
+        --color-primary-50: 240 253 250;
+        --color-primary-100: 204 251 241;
+        --color-primary-200: 153 246 228;
+        --color-primary-300: 94 234 212;
+        --color-primary-400: 45 212 191;
+        --color-primary-500: 20 184 166;
+        --color-primary-600: 13 148 136;
+        --color-primary-700: 15 118 110;
+        --color-primary-800: 17 94 89;
+        --color-primary-900: 19 78 74;
+        --color-primary-950: 4 47 46;
+      }
+
+      /* Explicit Primary Theme Utility Classes */
+      .bg-primary {
+        background-color: rgb(var(--color-primary-600)) !important;
+      }
+      .bg-primary-50 {
+        background-color: rgb(var(--color-primary-50)) !important;
+      }
+      .bg-primary-100 {
+        background-color: rgb(var(--color-primary-100)) !important;
+      }
+      .bg-primary-200 {
+        background-color: rgb(var(--color-primary-200)) !important;
+      }
+      .bg-primary-600 {
+        background-color: rgb(var(--color-primary-600)) !important;
+      }
+      .bg-primary-700 {
+        background-color: rgb(var(--color-primary-700)) !important;
+      }
+      .bg-primary-800 {
+        background-color: rgb(var(--color-primary-800)) !important;
+      }
+      .text-primary {
+        color: rgb(var(--color-primary-600)) !important;
+      }
+      .text-primary-700 {
+        color: rgb(var(--color-primary-700)) !important;
+      }
+      .text-primary-800 {
+        color: rgb(var(--color-primary-800)) !important;
+      }
+      .text-primary-900 {
+        color: rgb(var(--color-primary-900)) !important;
+      }
+      .border-primary {
+        border-color: rgb(var(--color-primary-500)) !important;
+      }
+      .border-primary-200 {
+        border-color: rgb(var(--color-primary-200)) !important;
+      }
+      .border-primary-300 {
+        border-color: rgb(var(--color-primary-300)) !important;
+      }
+      .border-primary-500 {
+        border-color: rgb(var(--color-primary-500)) !important;
+      }
+      .border-primary-600 {
+        border-color: rgb(var(--color-primary-600)) !important;
+      }
+      .ring-primary:focus, .focus\:ring-primary:focus {
+        --tw-ring-color: rgb(var(--color-primary-500)) !important;
+      }
+      @media screen {
+        #gp-print-portal {
+          display: none !important;
+          position: absolute !important;
+          left: -99999px !important;
+          top: -99999px !important;
+          width: 0 !important;
+          height: 0 !important;
+          overflow: hidden !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+      }
+
+      /* Custom print styles for printing cards, receipts & reports */
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: 6mm 8mm;
+        }
+        @page landscape {
+          size: A4 landscape;
+          margin: 5mm 6mm;
+        }
+
+        *, *:before, *:after {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          box-sizing: border-box !important;
+        }
+
+        body.is-printing-portal-active > *:not(#gp-print-portal),
+        body:has(#gp-print-portal:not(:empty)) > *:not(#gp-print-portal) {
+          display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          max-height: 0 !important;
+          overflow: hidden !important;
+        }
+
+        html, body, #root, main {
+          background: #ffffff !important;
+          color: #000000 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          height: auto !important;
+          min-height: 100% !important;
+          max-height: none !important;
+          overflow: visible !important;
+          overflow-x: visible !important;
+          overflow-y: visible !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        body.is-printing-portal-active #gp-print-portal,
+        #gp-print-portal {
+          display: block !important;
+          visibility: visible !important;
+          position: static !important;
+          width: 100% !important;
+          height: auto !important;
+          min-height: 100% !important;
+          margin: 0 auto !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          box-shadow: none !important;
+          border: none !important;
+          overflow: visible !important;
+          overflow-x: visible !important;
+          overflow-y: visible !important;
+        }
+
+        #gp-print-portal,
+        #gp-print-portal *,
+        .printable-area,
+        .printable-area *,
+        #receipt-print-area,
+        #receipt-print-area *,
+        #demand-notice-printable-area,
+        #demand-notice-printable-area *,
+        #member-card-printable,
+        #member-card-printable *,
+        #printable-member-card,
+        #printable-member-card *,
+        #printable-voucher-slip,
+        #printable-voucher-slip *,
+        #printable-payment-notesheet,
+        #printable-payment-notesheet *,
+        #printable-cashbook-register,
+        #printable-cashbook-register *,
+        #printable-cashbook-ledger,
+        #printable-cashbook-ledger *,
+        #printable-works-expenditure-report,
+        #printable-works-expenditure-report *,
+        #printable-taxpayers-report,
+        #printable-taxpayers-report *,
+        #booking-receipt-print-area,
+        #booking-receipt-print-area *,
+        #printable-building-permission,
+        #printable-building-permission *,
+        #printable-business-certificate,
+        #printable-business-certificate *,
+        .demand-notice-card,
+        .demand-notice-card * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          overflow: visible !important;
+          overflow-x: visible !important;
+          overflow-y: visible !important;
+          max-height: none !important;
+          text-overflow: clip !important;
+          -webkit-line-clamp: unset !important;
+          line-clamp: unset !important;
+        }
+
+        p, span, div, td, th, label, li, h1, h2, h3, h4, h5, h6 {
+          line-height: 1.45 !important;
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+        }
+
+        /* Hide layout chrome, sidebar, header, footers, navigation, buttons, controls */
+        header, footer, nav, aside, button, input:not([type="checkbox"]), select, textarea, .print\:hidden, .no-print, [class*="no-print"] {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        /* Modal backdrop reset without interfering with certificate internals */
+        body > div > div.fixed, body > div > div.backdrop-blur-md, div[class*="backdrop-blur"] {
+          position: static !important;
+          background: transparent !important;
+          background-color: transparent !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          box-shadow: none !important;
+          border: none !important;
+          width: 100% !important;
+          max-width: none !important;
+          height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+        }
+
+        /* Printable containers rendering rules */
+        #printable-area, #printable-voucher-slip, #printable-payment-notesheet, #printable-cashbook-register, #printable-cashbook-ledger, #printable-works-expenditure-report, #printable-work-breakdown-modal, #printable-taxpayers-report, #printable-member-card, #member-card-printable, #receipt-print-area, #demand-notice-printable-area, .demand-notice-card, .printable-area, #printable-business-certificate, .printable-certificate, #booking-receipt-print-area, #printable-building-permission, #bulk-vouchers-print-area, #tax-ledger-printable-area {
+          display: block !important;
+          visibility: visible !important;
+          position: relative !important;
+          width: 100% !important;
+          margin: 0 auto !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          overflow: visible !important;
+        }
+
+        .demand-notice-card {
+          display: block !important;
+          visibility: visible !important;
+          background-color: #ffffff !important;
+          border: 2px solid #0f172a !important;
+          border-radius: 12px !important;
+          padding: 16px 20px !important;
+          margin-bottom: 20px !important;
+          box-shadow: none !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          overflow: visible !important;
+        }
+
+        .demand-notice-card table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+        }
+
+        .demand-notice-card th, .demand-notice-card td {
+          border: 1px solid #cbd5e1 !important;
+        }
+
+        .demand-notice-card th {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
+          font-weight: 800 !important;
+        }
+
+        .printable-landscape, .certificate-landscape, #printable-business-certificate, [data-orientation="landscape"] {
+          page: landscape !important;
+          max-width: 287mm !important;
+          width: 100% !important;
+        }
+
+        #printable-business-certificate {
+          max-width: 287mm !important;
+          width: 100% !important;
+          height: auto !important;
+          margin: 0 auto !important;
+          padding: 2mm !important;
+          box-sizing: border-box !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+          page-break-before: avoid !important;
+          break-before: avoid !important;
+          overflow: visible !important;
+        }
+
+        #printable-business-certificate * {
+          overflow: visible !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        /* Explicit 2-column landscape grid & metadata strip rules for printing */
+        #printable-business-certificate .grid-cols-12, 
+        #printable-business-certificate [class*="grid-cols-12"], 
+        #printable-business-certificate [class*="md:grid-cols-12"] {
+          display: grid !important;
+          grid-template-columns: 7fr 5fr !important;
+          gap: 8px !important;
+        }
+        #printable-business-certificate [class*="md:col-span-7"], 
+        #printable-business-certificate [class*="col-span-7"] {
+          grid-column: span 1 !important;
+        }
+        #printable-business-certificate [class*="md:col-span-5"], 
+        #printable-business-certificate [class*="col-span-5"] {
+          grid-column: span 1 !important;
+        }
+        #printable-business-certificate [class*="sm:grid-cols-4"], 
+        #printable-business-certificate [class*="grid-cols-4"] {
+          display: grid !important;
+          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          gap: 6px !important;
+        }
+        #printable-business-certificate [class*="hidden md:flex"], 
+        #printable-business-certificate [class*="md:flex"] {
+          display: flex !important;
+        }
+        #printable-business-certificate [class*="grid-cols-2"] {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+
+        /* Force table text and borders only for data report tables, not styled certificates */
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          table-layout: auto !important;
+          overflow: visible !important;
+        }
+
+        .printable-report table, .report-table table, table.data-table {
+          font-size: 11px !important;
+        }
+
+        .printable-report th, .printable-report td, .report-table th, .report-table td, table.data-table th, table.data-table td {
+          border: 1px solid #000000 !important;
+          padding: 4px 6px !important;
+          color: #000000 !important;
+          overflow: visible !important;
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+        }
+
+        thead {
+          background-color: #f1f5f9 !important;
+          display: table-header-group !important;
+        }
+
+        tbody {
+          display: table-row-group !important;
+        }
+
+        tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        .page-break-inside-avoid {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        .page-break-after-always {
+          page-break-after: always !important;
+          break-after: always !important;
+        }
+      }
+    </style>
+    <script>
+      const withOpacity = (variableName) => ({ opacityValue }) => {
+        if (opacityValue !== undefined) {
+          return `rgba(var(${variableName}), ${opacityValue})`;
+        }
+        return `rgb(var(${variableName}))`;
+      };
+
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: withOpacity('--color-primary-600'),
+                '50': withOpacity('--color-primary-50'),
+                '100': withOpacity('--color-primary-100'),
+                '200': withOpacity('--color-primary-200'),
+                '300': withOpacity('--color-primary-300'),
+                '400': withOpacity('--color-primary-400'),
+                '500': withOpacity('--color-primary-500'),
+                '600': withOpacity('--color-primary-600'),
+                '700': withOpacity('--color-primary-700'),
+                '800': withOpacity('--color-primary-800'),
+                '900': withOpacity('--color-primary-900'),
+                '950': withOpacity('--color-primary-950'),
+              },
+            },
+            fontFamily: {
+              sans: ['"Noto Sans Devanagari"', 'Inter', '"Segoe UI"', 'Mangal', '"Nirmala UI"', 'system-ui', 'sans-serif'],
+              devanagari: ['"Noto Sans Devanagari"', '"Tiro Devanagari Hindi"', 'Mangal', '"Nirmala UI"', 'sans-serif'],
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'slide-up': 'slideUp 0.5s ease-in-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: 0 },
+                '100%': { opacity: 1 },
+              },
+              slideUp: {
+                '0%': { opacity: 0, transform: 'translateY(20px)' },
+                '100%': { opacity: 1, transform: 'translateY(0)' },
+              }
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Tiro+Devanagari+Hindi:ital@0;1&family=Yantramanav:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.16/24/outline/heroicons.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 font-sans antialiased">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

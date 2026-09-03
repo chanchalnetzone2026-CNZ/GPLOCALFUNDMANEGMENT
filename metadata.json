@@ -1,0 +1,8 @@
+{
+  "name": "Remix Gram Panchayat Tax Collection",
+  "description": "An application for Gram Panchayats to manage family-wise monthly tax collections, including charges, receipts, dues, and printable report cards. Features an admin dashboard for managing taxpayers and tax rates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
