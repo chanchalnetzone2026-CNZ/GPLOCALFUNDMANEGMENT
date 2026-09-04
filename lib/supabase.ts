@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { safeSetItem, safeGetItem } from './storage';
 
 const DEFAULT_SUPABASE_URL = 'https://ozjpffscpaogxwujvtqd.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anBmZnNjcGFvZ3h3dWp2dHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODQxMzQsImV4cCI6MjEwMTU2MDEzNH0.mmqTrvCGF1rvwTruPWUt_y0WwPWeENV9C_kwYmkm88A';
@@ -11,7 +12,7 @@ function getCredentials(): { url: string; key: string } {
   let key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
   if (!url || url.includes('your-supabase-project-id') || url.includes('your-project-id') || url.includes('example')) {
-    const customUrl = typeof window !== 'undefined' ? localStorage.getItem('custom_supabase_url') : null;
+    const customUrl = typeof window !== 'undefined' ? safeGetItem('custom_supabase_url') : null;
     if (customUrl) {
       url = customUrl;
     } else {
@@ -20,7 +21,7 @@ function getCredentials(): { url: string; key: string } {
   }
 
   if (!key || key === 'your-supabase-anon-key' || key === 'your-actual-supabase-anon-key') {
-    const customKey = typeof window !== 'undefined' ? localStorage.getItem('custom_supabase_anon_key') : null;
+    const customKey = typeof window !== 'undefined' ? safeGetItem('custom_supabase_anon_key') : null;
     if (customKey) {
       key = customKey;
     } else {
@@ -64,8 +65,8 @@ export function getSupabaseClient(): SupabaseClient | null {
 export function setSupabaseCredentials(url: string, key: string): boolean {
   try {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('custom_supabase_url', url.trim());
-      localStorage.setItem('custom_supabase_anon_key', key.trim());
+      safeSetItem('custom_supabase_url', url.trim());
+      safeSetItem('custom_supabase_anon_key', key.trim());
     }
     cachedClient = null;
     return checkIsConfigured();

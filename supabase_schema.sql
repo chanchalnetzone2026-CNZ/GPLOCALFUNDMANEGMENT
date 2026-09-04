@@ -15,8 +15,16 @@ CREATE TABLE IF NOT EXISTS public.admin_users (
     mobile TEXT UNIQUE NOT NULL,
     email TEXT,
     password TEXT NOT NULL,
+    photo_url TEXT,
+    avatar TEXT,
+    is_approved BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure photo and approval columns exist on admin_users table
+ALTER TABLE public.admin_users ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE public.admin_users ADD COLUMN IF NOT EXISTS avatar TEXT;
+ALTER TABLE public.admin_users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT true;
 
 CREATE INDEX IF NOT EXISTS idx_admin_mobile ON public.admin_users(mobile);
 CREATE INDEX IF NOT EXISTS idx_admin_panchayat ON public.admin_users(gram_panchayat);

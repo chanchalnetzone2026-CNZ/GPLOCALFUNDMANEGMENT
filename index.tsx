@@ -2,6 +2,7 @@
 import React, { Component, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { pruneLocalStorage, clearExcessStorage } from './lib/storage';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -24,6 +25,13 @@ class ErrorBoundary extends (React.Component as any) {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Captured by ErrorBoundary:', error, errorInfo);
+    if (
+      error?.name === 'QuotaExceededError' ||
+      (typeof error?.message === 'string' && error.message.toLowerCase().includes('quota'))
+    ) {
+      console.warn('Quota exceeded detected in ErrorBoundary. Pruning storage cache...');
+      pruneLocalStorage();
+    }
   }
 
   handleReset = () => {
@@ -31,8 +39,19 @@ class ErrorBoundary extends (React.Component as any) {
     window.location.reload();
   };
 
+  handleClearCacheAndReload = () => {
+    clearExcessStorage();
+    this.setState({ hasError: false, error: null });
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
+      const isQuota =
+        this.state.error?.name === 'QuotaExceededError' ||
+        (typeof this.state.error?.message === 'string' &&
+          this.state.error.message.toLowerCase().includes('quota'));
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-6 text-center space-y-4">
@@ -40,16 +59,27 @@ class ErrorBoundary extends (React.Component as any) {
               ⚠️
             </div>
             <h2 className="text-xl font-black text-slate-900">
-              त्रुटि हुई / An unexpected error occurred
+              {isQuota ? 'ब्राउज़र स्टोरेज सीमा पार / Storage Quota Exceeded' : 'त्रुटि हुई / An unexpected error occurred'}
             </h2>
             <p className="text-xs text-slate-600">
-              {this.state.error?.message || 'एप्लिकेशन को पुनः लोड करने का प्रयास करें।'}
+              {isQuota
+                ? 'ब्राउज़र लोकल स्टोरेज कोटा भर जाने के कारण त्रुटि आई। नीचे दिए गए बटन से कैशे खाली करें।'
+                : this.state.error?.message || 'एप्लिकेशन को पुनः लोड करने का प्रयास करें।'}
             </p>
-            <div className="flex gap-2 justify-center pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+              {isQuota && (
+                <button
+                  type="button"
+                  onClick={this.handleClearCacheAndReload}
+                  className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
+                >
+                  🧹 कैशे साफ़ कर पुनः लोड करें / Clear Cache & Reload
+                </button>
+              )}
               <button
                 type="button"
                 onClick={this.handleReset}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
               >
                 🔄 पृष्ठ पुनः लोड करें / Reload Page
               </button>

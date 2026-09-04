@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Admin } from '../types';
 import ViewHeader from './ViewHeader';
+import { compressImage } from '../lib/storage';
 
 interface ManageProfileViewProps {
   admin: Admin;
@@ -43,7 +44,7 @@ export const ManageProfileView: React.FC<ManageProfileViewProps> = ({ admin, onU
   const [isSaved, setIsSaved] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setPhotoError(null);
     const file = e.target.files?.[0];
     if (!file) return;
@@ -58,15 +59,21 @@ export const ManageProfileView: React.FC<ManageProfileViewProps> = ({ admin, onU
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setFormData((prev) => ({ ...prev, photoUrl: base64 }));
-    };
-    reader.onerror = () => {
-      setPhotoError(isHindi ? 'फोटो लोड करने में त्रुटि हुई।' : 'Error loading photo.');
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress avatar to lightweight 256x256 thumbnail (~15KB) to prevent storage overflow
+      const compressed = await compressImage(file, 256, 256, 0.75);
+      setFormData((prev) => ({ ...prev, photoUrl: compressed }));
+    } catch (err) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setFormData((prev) => ({ ...prev, photoUrl: base64 }));
+      };
+      reader.onerror = () => {
+        setPhotoError(isHindi ? 'फोटो लोड करने में त्रुटि हुई।' : 'Error loading photo.');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRemovePhoto = () => {

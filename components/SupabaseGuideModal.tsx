@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { checkIsConfigured, setSupabaseCredentials } from '../lib/supabase';
+import { safeGetItem } from '../lib/storage';
 
 interface SupabaseGuideModalProps {
   isOpen: boolean;
@@ -15,8 +16,8 @@ export const SupabaseGuideModal: React.FC<SupabaseGuideModalProps> = ({
   const [copiedEnv, setCopiedEnv] = useState(false);
   const [copiedFullSql, setCopiedFullSql] = useState(false);
   const [copiedOtherTaxSql, setCopiedOtherTaxSql] = useState(false);
-  const [inputUrl, setInputUrl] = useState(() => localStorage.getItem('custom_supabase_url') || '');
-  const [inputKey, setInputKey] = useState(() => localStorage.getItem('custom_supabase_anon_key') || '');
+  const [inputUrl, setInputUrl] = useState(() => safeGetItem('custom_supabase_url') || '');
+  const [inputKey, setInputKey] = useState(() => safeGetItem('custom_supabase_anon_key') || '');
   const [connectMsg, setConnectMsg] = useState<{ text: string; isError: boolean } | null>(null);
 
   if (!isOpen) return null;

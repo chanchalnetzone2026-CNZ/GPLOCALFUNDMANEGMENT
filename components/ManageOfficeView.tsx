@@ -4,6 +4,7 @@ import ViewHeader from './ViewHeader';
 import OfficialVoucherHeader from './OfficialVoucherHeader';
 import { LOCATIONS } from '../utils/locations';
 import { getCanonicalDistrict, getCanonicalBlock, getCanonicalPanchayat } from '../utils/locationNorm';
+import { compressImage } from '../lib/storage';
 
 interface ManageOfficeViewProps {
   officeDetails: OfficeDetails;
@@ -211,20 +212,26 @@ export const ManageOfficeView: React.FC<ManageOfficeViewProps> = ({
   };
 
   // Handle Image File Upload (Logo or Barcode QR)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'logoUrl' | 'qrCodeUrl') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'logoUrl' | 'qrCodeUrl') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert(isHindi ? 'फाइल का आकार 2MB से कम होना चाहिए' : 'File size must be under 2MB');
+    if (file.size > 5 * 1024 * 1024) {
+      alert(isHindi ? 'फाइल का आकार 5MB से कम होना चाहिए' : 'File size must be under 5MB');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, [fieldName]: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress logo/QR to max 320x320 JPEG to avoid exhausting localStorage
+      const compressed = await compressImage(file, 320, 320, 0.8);
+      setFormData((prev) => ({ ...prev, [fieldName]: compressed }));
+    } catch (err) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, [fieldName]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleGenerateUpiQr = () => {

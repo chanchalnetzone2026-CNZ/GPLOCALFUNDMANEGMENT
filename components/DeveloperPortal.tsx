@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Admin, DeveloperProfile, Subscription, SubscriptionPlan, Announcement, ComplaintQuery, DeveloperTab } from '../types';
 import { saveSubscriptionPlanToSupabase, deleteSubscriptionPlanFromSupabase, saveSubscriptionToSupabase, deleteSubscriptionFromSupabase, saveComplaintToSupabase, saveAdminUserToSupabase, deleteAdminUserFromSupabase, saveAnnouncementToSupabase, deleteAnnouncementFromSupabase, saveDeveloperProfileToSupabase, fetchDeveloperProfileFromSupabase, uploadImageToSupabaseBucket } from '../lib/supabaseSync';
 import { formatDateDDMMYYYY } from '../utils/printUtils';
+import { compressImage, safeSetItem } from '../lib/storage';
 
 interface DeveloperPortalProps {
   isHindi: boolean;
@@ -255,11 +256,10 @@ export const DeveloperPortal: React.FC<DeveloperPortalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show preview immediately via FileReader
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      setProfileForm(prev => ({ ...prev, logoUrl: base64 }));
+    try {
+      // Compress preview thumbnail to keep memory and storage lightweight
+      const compressed = await compressImage(file, 300, 300, 0.8);
+      setProfileForm(prev => ({ ...prev, logoUrl: compressed }));
       
       setUploadingLogo(true);
       try {
@@ -272,18 +272,19 @@ export const DeveloperPortal: React.FC<DeveloperPortalProps> = ({
       } finally {
         setUploadingLogo(false);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('Logo compression error:', err);
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      setProfileForm(prev => ({ ...prev, avatarUrl: base64 }));
+    try {
+      // Compress avatar preview thumbnail
+      const compressed = await compressImage(file, 256, 256, 0.75);
+      setProfileForm(prev => ({ ...prev, avatarUrl: compressed }));
       
       setUploadingAvatar(true);
       try {
@@ -296,18 +297,19 @@ export const DeveloperPortal: React.FC<DeveloperPortalProps> = ({
       } finally {
         setUploadingAvatar(false);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('Avatar compression error:', err);
+    }
   };
 
   const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      setProfileForm(prev => ({ ...prev, qrCodeUrl: base64 }));
+    try {
+      // Compress QR code preview thumbnail
+      const compressed = await compressImage(file, 300, 300, 0.85);
+      setProfileForm(prev => ({ ...prev, qrCodeUrl: compressed }));
       
       setUploadingQr(true);
       try {
@@ -320,8 +322,9 @@ export const DeveloperPortal: React.FC<DeveloperPortalProps> = ({
       } finally {
         setUploadingQr(false);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('QR code compression error:', err);
+    }
   };
 
   // Handlers
@@ -341,10 +344,8 @@ export const DeveloperPortal: React.FC<DeveloperPortalProps> = ({
       // 1. Update React memory state
       setDeveloperProfile(updatedProfile);
 
-      // 2. Update localStorage for offline fallback
-      try {
-        localStorage.setItem('gp_developer_profile', JSON.stringify(updatedProfile));
-      } catch (lsErr) {}
+      // 2. Update localStorage safely
+      safeSetItem('gp_developer_profile', JSON.stringify(updatedProfile));
 
       // 3. Persist to Supabase Database (with auto-upload of images to storage)
       const res = await saveDeveloperProfileToSupabase(updatedProfile);

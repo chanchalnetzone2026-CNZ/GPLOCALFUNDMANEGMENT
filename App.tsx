@@ -45,6 +45,7 @@ import {
   SuccessPopupModal,
   SuccessPopupDetails,
 } from './components/EntryFeedbackModals';
+import { safeSetItem, safeGetItem, safeRemoveItem } from './lib/storage';
 
 // --- INITIAL CASHBOOK DATA ---
 const initialAccountHeads: AccountHead[] = [
@@ -200,10 +201,17 @@ const App: React.FC = () => {
   };
   const [adminList, setAdminList] = useState<Admin[]>(() => {
     try {
-      const saved = localStorage.getItem('gp_admin_list');
+      const saved = safeGetItem('gp_admin_list');
       if (saved) {
         const parsed: Admin[] = JSON.parse(saved);
-        const filtered = parsed.filter(a => !isLegacyDemoId(a.id));
+        const filtered = parsed
+          .filter(a => !isLegacyDemoId(a.id))
+          .map(a => ({
+            ...a,
+            // If photoUrl is an enormous raw base64 string (>100KB), strip it to prevent quota issues
+            photoUrl: a.photoUrl && a.photoUrl.startsWith('data:image') && a.photoUrl.length > 100000 ? '' : a.photoUrl,
+            avatar: a.avatar && a.avatar.startsWith('data:image') && a.avatar.length > 100000 ? '' : a.avatar,
+          }));
         if (filtered.length > 0) return filtered;
       }
     } catch (e) {}
@@ -212,27 +220,27 @@ const App: React.FC = () => {
   const [selectedAdminId, setSelectedAdminId] = useState<string>('');
   const [loggedInAdmin, setLoggedInAdmin] = useState<Admin | null>(() => {
     try {
-      const lastActive = localStorage.getItem('gp_last_activity_time');
-      const saved = localStorage.getItem('gp_logged_in_admin');
+      const lastActive = safeGetItem('gp_last_activity_time');
+      const saved = safeGetItem('gp_logged_in_admin');
       if (saved) {
         if (lastActive) {
           const timeDiff = Date.now() - Number(lastActive);
           if (timeDiff >= 5 * 60 * 1000) {
             // Expired due to 5+ minutes of inactivity
-            localStorage.removeItem('gp_logged_in_admin');
-            localStorage.removeItem('gp_last_activity_time');
+            safeRemoveItem('gp_logged_in_admin');
+            safeRemoveItem('gp_last_activity_time');
             return null;
           }
         } else {
-          localStorage.setItem('gp_last_activity_time', String(Date.now()));
+          safeSetItem('gp_last_activity_time', String(Date.now()));
         }
         return JSON.parse(saved);
       }
     } catch (e) {}
-    const hasVisited = localStorage.getItem('gp_has_visited');
+    const hasVisited = safeGetItem('gp_has_visited');
     if (!hasVisited) {
-      localStorage.setItem('gp_has_visited', 'true');
-      localStorage.setItem('gp_last_activity_time', String(Date.now()));
+      safeSetItem('gp_has_visited', 'true');
+      safeSetItem('gp_last_activity_time', String(Date.now()));
       return initialAdminList[0] || null;
     }
     return null;
@@ -514,37 +522,51 @@ const App: React.FC = () => {
       setAppToast((current) => (current?.message === message ? null : current));
     }, 4500);
   };
-  useEffect(() => { localStorage.setItem('gp_families', JSON.stringify(families)); }, [families]);
-  useEffect(() => { localStorage.setItem('gp_taxes', JSON.stringify(taxes)); }, [taxes]);
-  useEffect(() => { localStorage.setItem('gp_payments', JSON.stringify(payments)); }, [payments]);
-  useEffect(() => { localStorage.setItem('gp_admin_list', JSON.stringify(adminList)); }, [adminList]);
+  useEffect(() => { safeSetItem('gp_families', JSON.stringify(families)); }, [families]);
+  useEffect(() => { safeSetItem('gp_taxes', JSON.stringify(taxes)); }, [taxes]);
+  useEffect(() => { safeSetItem('gp_payments', JSON.stringify(payments)); }, [payments]);
+  useEffect(() => {
+    // Sanitize any oversize base64 photoUrl before saving adminList
+    const sanitizedAdmins = adminList.map((a) =>
+      a.photoUrl && a.photoUrl.startsWith('data:image') && a.photoUrl.length > 80000
+        ? { ...a, photoUrl: '' }
+        : a
+    );
+    safeSetItem('gp_admin_list', JSON.stringify(sanitizedAdmins));
+  }, [adminList]);
   useEffect(() => {
     if (loggedInAdmin) {
-      localStorage.setItem('gp_logged_in_admin', JSON.stringify(loggedInAdmin));
+      const sanitized =
+        loggedInAdmin.photoUrl &&
+        loggedInAdmin.photoUrl.startsWith('data:image') &&
+        loggedInAdmin.photoUrl.length > 80000
+          ? { ...loggedInAdmin, photoUrl: '' }
+          : loggedInAdmin;
+      safeSetItem('gp_logged_in_admin', JSON.stringify(sanitized));
     } else {
-      localStorage.removeItem('gp_logged_in_admin');
-      localStorage.removeItem('gp_last_activity_time');
+      safeRemoveItem('gp_logged_in_admin');
+      safeRemoveItem('gp_last_activity_time');
     }
   }, [loggedInAdmin]);
-  useEffect(() => { localStorage.setItem('gp_office_details_list', JSON.stringify(officeDetailsList)); }, [officeDetailsList]);
-  useEffect(() => { localStorage.setItem('gp_developer_profile', JSON.stringify(developerProfile)); }, [developerProfile]);
-  useEffect(() => { localStorage.setItem('gp_subscriptions', JSON.stringify(subscriptions)); }, [subscriptions]);
-  useEffect(() => { localStorage.setItem('gp_subscription_plans', JSON.stringify(subscriptionPlans)); }, [subscriptionPlans]);
-  useEffect(() => { localStorage.setItem('gp_announcements', JSON.stringify(announcements)); }, [announcements]);
-  useEffect(() => { localStorage.setItem('gp_complaints', JSON.stringify(complaints)); }, [complaints]);
-  useEffect(() => { localStorage.setItem('gp_tax_rates', JSON.stringify(taxRates)); }, [taxRates]);
-  useEffect(() => { localStorage.setItem('gp_is_tax_rates_locked', String(isTaxRatesLocked)); }, [isTaxRatesLocked]);
-  useEffect(() => { localStorage.setItem('gp_tax_rates_lock_info', JSON.stringify(taxRatesLockInfo)); }, [taxRatesLockInfo]);
-  useEffect(() => { localStorage.setItem('gp_tax_beneficiary_lists', JSON.stringify(taxBeneficiaryLists)); }, [taxBeneficiaryLists]);
-  useEffect(() => { localStorage.setItem('gp_account_heads', JSON.stringify(accountHeads)); }, [accountHeads]);
-  useEffect(() => { localStorage.setItem('gp_subheads', JSON.stringify(subHeads)); }, [subHeads]);
-  useEffect(() => { localStorage.setItem('gp_vendors', JSON.stringify(vendors)); }, [vendors]);
-  useEffect(() => { localStorage.setItem('gp_works', JSON.stringify(works)); }, [works]);
-  useEffect(() => { localStorage.setItem('gp_vouchers', JSON.stringify(vouchers)); }, [vouchers]);
-  useEffect(() => { localStorage.setItem('gp_booking_rents', JSON.stringify(bookingRents)); }, [bookingRents]);
-  useEffect(() => { localStorage.setItem('gp_building_permissions', JSON.stringify(buildingPermissions)); }, [buildingPermissions]);
-  useEffect(() => { localStorage.setItem('gp_other_tax_receipts', JSON.stringify(otherTaxReceipts)); }, [otherTaxReceipts]);
-  useEffect(() => { localStorage.setItem('gp_business_registrations', JSON.stringify(businessRegistrations)); }, [businessRegistrations]);
+  useEffect(() => { safeSetItem('gp_office_details_list', JSON.stringify(officeDetailsList)); }, [officeDetailsList]);
+  useEffect(() => { safeSetItem('gp_developer_profile', JSON.stringify(developerProfile)); }, [developerProfile]);
+  useEffect(() => { safeSetItem('gp_subscriptions', JSON.stringify(subscriptions)); }, [subscriptions]);
+  useEffect(() => { safeSetItem('gp_subscription_plans', JSON.stringify(subscriptionPlans)); }, [subscriptionPlans]);
+  useEffect(() => { safeSetItem('gp_announcements', JSON.stringify(announcements)); }, [announcements]);
+  useEffect(() => { safeSetItem('gp_complaints', JSON.stringify(complaints)); }, [complaints]);
+  useEffect(() => { safeSetItem('gp_tax_rates', JSON.stringify(taxRates)); }, [taxRates]);
+  useEffect(() => { safeSetItem('gp_is_tax_rates_locked', String(isTaxRatesLocked)); }, [isTaxRatesLocked]);
+  useEffect(() => { safeSetItem('gp_tax_rates_lock_info', JSON.stringify(taxRatesLockInfo)); }, [taxRatesLockInfo]);
+  useEffect(() => { safeSetItem('gp_tax_beneficiary_lists', JSON.stringify(taxBeneficiaryLists)); }, [taxBeneficiaryLists]);
+  useEffect(() => { safeSetItem('gp_account_heads', JSON.stringify(accountHeads)); }, [accountHeads]);
+  useEffect(() => { safeSetItem('gp_subheads', JSON.stringify(subHeads)); }, [subHeads]);
+  useEffect(() => { safeSetItem('gp_vendors', JSON.stringify(vendors)); }, [vendors]);
+  useEffect(() => { safeSetItem('gp_works', JSON.stringify(works)); }, [works]);
+  useEffect(() => { safeSetItem('gp_vouchers', JSON.stringify(vouchers)); }, [vouchers]);
+  useEffect(() => { safeSetItem('gp_booking_rents', JSON.stringify(bookingRents)); }, [bookingRents]);
+  useEffect(() => { safeSetItem('gp_building_permissions', JSON.stringify(buildingPermissions)); }, [buildingPermissions]);
+  useEffect(() => { safeSetItem('gp_other_tax_receipts', JSON.stringify(otherTaxReceipts)); }, [otherTaxReceipts]);
+  useEffect(() => { safeSetItem('gp_business_registrations', JSON.stringify(businessRegistrations)); }, [businessRegistrations]);
 
   // --------------------------------------------------------------------------------------------------
   // 5-MINUTE AUTO-LOGOUT ON USER INACTIVITY
@@ -560,9 +582,7 @@ const App: React.FC = () => {
     const initTime = Date.now();
     lastActivityRef.current = initTime;
     lastStorageSyncRef.current = initTime;
-    try {
-      localStorage.setItem('gp_last_activity_time', String(initTime));
-    } catch (e) {}
+    safeSetItem('gp_last_activity_time', String(initTime));
 
     const handleUserActivity = () => {
       const now = Date.now();
@@ -570,9 +590,7 @@ const App: React.FC = () => {
       // Sync to localStorage throttled to every 10 seconds for multi-tab consistency
       if (now - lastStorageSyncRef.current > 10000) {
         lastStorageSyncRef.current = now;
-        try {
-          localStorage.setItem('gp_last_activity_time', String(now));
-        } catch (e) {}
+        safeSetItem('gp_last_activity_time', String(now));
       }
     };
 
@@ -580,10 +598,8 @@ const App: React.FC = () => {
       setLoggedInAdmin(null);
       setIsDeveloperLoggedIn(false);
       setCurrentPage(Page.LOGIN);
-      try {
-        localStorage.removeItem('gp_logged_in_admin');
-        localStorage.removeItem('gp_last_activity_time');
-      } catch (e) {}
+      safeRemoveItem('gp_logged_in_admin');
+      safeRemoveItem('gp_last_activity_time');
 
       const sessionExpireNotice = isHindi
         ? '⏱️ 5 मिनट तक कोई गतिविधि न होने (Inactivity) के कारण सुरक्षा कारणों से आपका सत्र स्वतः लॉगआउट कर दिया गया है। कृपया पुनः लॉगिन करें।'
@@ -917,9 +933,7 @@ const App: React.FC = () => {
       }
 
       if (hasChanges) {
-        try {
-          localStorage.setItem('gp_vouchers', JSON.stringify(updatedList));
-        } catch (e) {}
+        safeSetItem('gp_vouchers', JSON.stringify(updatedList));
         return updatedList;
       }
       return currentVouchersList;
@@ -1059,11 +1073,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.className = theme;
-    try {
-      localStorage.setItem('app_theme', theme);
-    } catch (e) {
-      console.warn('Could not save theme to localStorage', e);
-    }
+    safeSetItem('app_theme', theme);
   }, [theme]);
 
   // Synchronize all data from Supabase backend database
@@ -1126,80 +1136,63 @@ const App: React.FC = () => {
 
       if (dbAdmins !== null) {
         if (dbAdmins.length > 0) {
-          setAdminList(dbAdmins);
-          try {
-            localStorage.setItem('gp_admin_list', JSON.stringify(dbAdmins));
-          } catch (e) {}
+          const sanitizedAdmins = dbAdmins.map((a) =>
+            a.photoUrl && a.photoUrl.startsWith('data:image') && a.photoUrl.length > 80000
+              ? { ...a, photoUrl: '' }
+              : a
+          );
+          setAdminList(sanitizedAdmins);
+          safeSetItem('gp_admin_list', JSON.stringify(sanitizedAdmins));
         } else {
           setAdminList([]);
-          try {
-            localStorage.setItem('gp_admin_list', JSON.stringify([]));
-          } catch (e) {}
+          safeSetItem('gp_admin_list', JSON.stringify([]));
         }
       }
 
       // If database is connected, state should reflect exactly what is in Supabase
       if (dbFamilies !== null) {
         setFamilies(dbFamilies);
-        try {
-          localStorage.setItem('gp_families', JSON.stringify(dbFamilies));
-        } catch (e) {}
+        safeSetItem('gp_families', JSON.stringify(dbFamilies));
       }
 
       if (dbTaxes !== null) {
         setTaxes(dbTaxes);
-        try {
-          localStorage.setItem('gp_taxes', JSON.stringify(dbTaxes));
-        } catch (e) {}
+        safeSetItem('gp_taxes', JSON.stringify(dbTaxes));
       }
 
       if (dbPayments !== null) {
         setPayments(dbPayments);
-        try {
-          localStorage.setItem('gp_payments', JSON.stringify(dbPayments));
-        } catch (e) {}
+        safeSetItem('gp_payments', JSON.stringify(dbPayments));
       }
 
       if (dbOfficeList !== null && Array.isArray(dbOfficeList)) {
         setOfficeDetailsList(dbOfficeList);
-        try {
-          localStorage.setItem('gp_office_details_list', JSON.stringify(dbOfficeList));
-        } catch (e) {}
+        safeSetItem('gp_office_details_list', JSON.stringify(dbOfficeList));
       }
 
       if (dbComplaints !== null) {
         setComplaints(dbComplaints);
-        try {
-          localStorage.setItem('gp_complaints', JSON.stringify(dbComplaints));
-        } catch (e) {}
+        safeSetItem('gp_complaints', JSON.stringify(dbComplaints));
       }
 
       if (dbSubs !== null) {
         setSubscriptions(dbSubs);
-        try {
-          localStorage.setItem('gp_subscriptions', JSON.stringify(dbSubs));
-        } catch (e) {}
+        safeSetItem('gp_subscriptions', JSON.stringify(dbSubs));
       }
 
       if (dbPlans !== null) {
         setSubscriptionPlans(dbPlans);
-        try {
-          localStorage.setItem('gp_subscription_plans', JSON.stringify(dbPlans));
-        } catch (e) {}
+        safeSetItem('gp_subscription_plans', JSON.stringify(dbPlans));
       }
 
       if (dbAncs !== null) {
         setAnnouncements(dbAncs);
-        try {
-          localStorage.setItem('gp_announcements', JSON.stringify(dbAncs));
-        } catch (e) {}
+        safeSetItem('gp_announcements', JSON.stringify(dbAncs));
       }
 
       if (dbDevProfile !== null) {
         setDeveloperProfile(dbDevProfile);
-        try {
-          localStorage.setItem('gp_developer_profile', JSON.stringify(dbDevProfile));
-        } catch (e) {}
+        safeSetItem('gp_developer_profile', JSON.stringify(dbDevProfile));
       }
 
       if (ratesRes) {
@@ -1217,69 +1210,51 @@ const App: React.FC = () => {
 
       if (dbLists !== null) {
         setTaxBeneficiaryLists(dbLists);
-        try {
-          localStorage.setItem('gp_tax_beneficiary_lists', JSON.stringify(dbLists));
-        } catch (e) {}
+        safeSetItem('gp_tax_beneficiary_lists', JSON.stringify(dbLists));
       }
 
       if (dbHeads !== null) {
         const filtered = dbHeads.filter((h) => !isDemoCashbookId(h.id));
         setAccountHeads(filtered);
-        try {
-          localStorage.setItem('gp_account_heads', JSON.stringify(filtered));
-        } catch (e) {}
+        safeSetItem('gp_account_heads', JSON.stringify(filtered));
       }
 
       if (dbVendors !== null) {
         const filtered = dbVendors.filter((v) => !isDemoCashbookId(v.id));
         setVendors(filtered);
-        try {
-          localStorage.setItem('gp_vendors', JSON.stringify(filtered));
-        } catch (e) {}
+        safeSetItem('gp_vendors', JSON.stringify(filtered));
       }
 
       if (dbWorks !== null) {
         const filtered = dbWorks.filter((w) => !isDemoCashbookId(w.id));
         setWorks(filtered);
-        try {
-          localStorage.setItem('gp_works', JSON.stringify(filtered));
-        } catch (e) {}
+        safeSetItem('gp_works', JSON.stringify(filtered));
       }
 
       if (dbVouchers !== null) {
         const filtered = dbVouchers.filter((v) => !isDemoCashbookId(v.id));
         setVouchers(filtered);
-        try {
-          localStorage.setItem('gp_vouchers', JSON.stringify(filtered));
-        } catch (e) {}
+        safeSetItem('gp_vouchers', JSON.stringify(filtered));
       }
 
       if (dbBookingRents !== null) {
         setBookingRents(dbBookingRents);
-        try {
-          localStorage.setItem('gp_booking_rents', JSON.stringify(dbBookingRents));
-        } catch (e) {}
+        safeSetItem('gp_booking_rents', JSON.stringify(dbBookingRents));
       }
 
       if (dbBuildingPerms !== null) {
         setBuildingPermissions(dbBuildingPerms);
-        try {
-          localStorage.setItem('gp_building_permissions', JSON.stringify(dbBuildingPerms));
-        } catch (e) {}
+        safeSetItem('gp_building_permissions', JSON.stringify(dbBuildingPerms));
       }
 
       if (dbOtherTaxReceipts !== null) {
         setOtherTaxReceipts(dbOtherTaxReceipts);
-        try {
-          localStorage.setItem('gp_other_tax_receipts', JSON.stringify(dbOtherTaxReceipts));
-        } catch (e) {}
+        safeSetItem('gp_other_tax_receipts', JSON.stringify(dbOtherTaxReceipts));
       }
 
       if (dbBusinessRegistrations !== null) {
         setBusinessRegistrations(dbBusinessRegistrations);
-        try {
-          localStorage.setItem('gp_business_registrations', JSON.stringify(dbBusinessRegistrations));
-        } catch (e) {}
+        safeSetItem('gp_business_registrations', JSON.stringify(dbBusinessRegistrations));
       }
 
       if (isManual) {
@@ -1963,10 +1938,12 @@ const App: React.FC = () => {
     }
 
     setLoggedInAdmin(matchedAdmin);
-    try {
-      localStorage.setItem('gp_logged_in_admin', JSON.stringify(matchedAdmin));
-      localStorage.setItem('gp_last_activity_time', String(Date.now()));
-    } catch (err) {}
+    const sanitizedAdmin =
+      matchedAdmin.photoUrl && matchedAdmin.photoUrl.startsWith('data:image') && matchedAdmin.photoUrl.length > 80000
+        ? { ...matchedAdmin, photoUrl: '' }
+        : matchedAdmin;
+    safeSetItem('gp_logged_in_admin', JSON.stringify(sanitizedAdmin));
+    safeSetItem('gp_last_activity_time', String(Date.now()));
     lastActivityRef.current = Date.now();
     lastStorageSyncRef.current = Date.now();
     setRegistrationSuccessBanner('');
@@ -2026,12 +2003,10 @@ const App: React.FC = () => {
 
       // Update state & local storage
       setAdminList((prev) => prev.map((a) => (a.id === updatedAdmin.id ? updatedAdmin : a)));
-      try {
-        const savedAdmins = JSON.parse(localStorage.getItem('gp_admin_list') || '[]');
-        const updatedSaved = savedAdmins.map((a: Admin) => (a.id === updatedAdmin.id ? updatedAdmin : a));
-        if (!updatedSaved.some((a: Admin) => a.id === updatedAdmin.id)) updatedSaved.push(updatedAdmin);
-        localStorage.setItem('gp_admin_list', JSON.stringify(updatedSaved));
-      } catch (e) {}
+      const savedAdmins = JSON.parse(safeGetItem('gp_admin_list') || '[]');
+      const updatedSaved = savedAdmins.map((a: Admin) => (a.id === updatedAdmin.id ? updatedAdmin : a));
+      if (!updatedSaved.some((a: Admin) => a.id === updatedAdmin.id)) updatedSaved.push(updatedAdmin);
+      safeSetItem('gp_admin_list', JSON.stringify(updatedSaved));
 
       // Save to Supabase database
       if (checkIsConfigured()) {
@@ -2114,10 +2089,8 @@ const App: React.FC = () => {
     setLoggedInAdmin(null);
     setIsDeveloperLoggedIn(false);
     setCurrentPage(Page.LOGIN);
-    try {
-      localStorage.removeItem('gp_logged_in_admin');
-      localStorage.removeItem('gp_last_activity_time');
-    } catch (e) {}
+    safeRemoveItem('gp_logged_in_admin');
+    safeRemoveItem('gp_last_activity_time');
     if (customMsg) {
       setLoginError(customMsg);
     }
@@ -2338,9 +2311,7 @@ const App: React.FC = () => {
         (f) => !newSamagraSet.has(String(f.samagraId || '').trim().toLowerCase())
       );
       const combined = [...filtered, ...createdFamilies];
-      try {
-        localStorage.setItem('gp_families', JSON.stringify(combined));
-      } catch (e) {}
+      safeSetItem('gp_families', JSON.stringify(combined));
       return combined;
     });
 
@@ -2351,9 +2322,7 @@ const App: React.FC = () => {
     const idSet = new Set(familyIds);
     setFamilies((prev) => {
       const remaining = prev.filter((f) => !idSet.has(f.id));
-      try {
-        localStorage.setItem('gp_families', JSON.stringify(remaining));
-      } catch (e) {}
+      safeSetItem('gp_families', JSON.stringify(remaining));
       return remaining;
     });
     await deleteFamiliesBatchFromSupabase(familyIds);
@@ -2384,17 +2353,13 @@ const App: React.FC = () => {
     const targetPayment = payments.find((p) => p.id === paymentId);
     setPayments((prev) => {
       const updated = prev.filter((p) => p.id !== paymentId);
-      try {
-        localStorage.setItem('gp_payments', JSON.stringify(updated));
-      } catch (e) {}
+      safeSetItem('gp_payments', JSON.stringify(updated));
       return updated;
     });
     deletePaymentFromSupabase(paymentId);
     setVouchers((prev) => {
       const updated = prev.filter((v) => v.id !== `vouch-tax-${paymentId}`);
-      try {
-        localStorage.setItem('gp_vouchers', JSON.stringify(updated));
-      } catch (e) {}
+      safeSetItem('gp_vouchers', JSON.stringify(updated));
       return updated;
     });
     deleteCashbookVoucherFromSupabase(`vouch-tax-${paymentId}`);
@@ -2979,11 +2944,13 @@ const App: React.FC = () => {
   };
 
   const handleUpdateAdmin = async (updatedAdmin: Admin) => {
+    const sanitizedAdmin =
+      updatedAdmin.photoUrl && updatedAdmin.photoUrl.startsWith('data:image') && updatedAdmin.photoUrl.length > 80000
+        ? { ...updatedAdmin, photoUrl: '' }
+        : updatedAdmin;
     setLoggedInAdmin(updatedAdmin);
     setAdminList((prev) => prev.map((a) => (a.id === updatedAdmin.id ? updatedAdmin : a)));
-    try {
-      localStorage.setItem('gp_logged_in_admin', JSON.stringify(updatedAdmin));
-    } catch (e) {}
+    safeSetItem('gp_logged_in_admin', JSON.stringify(sanitizedAdmin));
     try {
       const res = await saveAdminUserToSupabase(updatedAdmin);
       if (res.success) {
@@ -4959,10 +4926,8 @@ const App: React.FC = () => {
                         : o
                     )
                   : [updatedRecord, ...prev];
-                try {
-                  localStorage.setItem('gp_office_details_list', JSON.stringify(next));
-                  localStorage.setItem(`gp_office_details_${loggedInAdmin.id}`, JSON.stringify(updatedRecord));
-                } catch (e) {}
+                safeSetItem('gp_office_details_list', JSON.stringify(next));
+                safeSetItem(`gp_office_details_${loggedInAdmin.id}`, JSON.stringify(updatedRecord));
                 return next;
               });
 
@@ -4979,10 +4944,8 @@ const App: React.FC = () => {
               setLoggedInAdmin(updatedAdmin);
               setAdminList((prev) => {
                 const nextList = prev.map((a) => (a.id === updatedAdmin.id ? updatedAdmin : a));
-                try {
-                  localStorage.setItem('gp_admin_list', JSON.stringify(nextList));
-                  localStorage.setItem('gp_logged_in_admin', JSON.stringify(updatedAdmin));
-                } catch (e) {}
+                safeSetItem('gp_admin_list', JSON.stringify(nextList));
+                safeSetItem('gp_logged_in_admin', JSON.stringify(updatedAdmin));
                 return nextList;
               });
               saveAdminUserToSupabase(updatedAdmin);

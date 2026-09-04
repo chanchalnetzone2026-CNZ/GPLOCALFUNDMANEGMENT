@@ -3,6 +3,8 @@
  * For Gram Panchayat Financial & Tax Management System
  */
 
+import { safeSetItem, safeGetItem, safeRemoveItem } from './storage';
+
 // --- 1. XSS & SCRIPT INJECTION SANITIZATION ---
 
 /**
@@ -127,7 +129,7 @@ const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes lockout
 
 export function getLoginSecurityStatus(identifier: string): { isLocked: boolean; remainingSeconds: number; attempts: number } {
   try {
-    const raw = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
+    const raw = safeGetItem(ATTEMPTS_STORAGE_KEY);
     if (!raw) return { isLocked: false, remainingSeconds: 0, attempts: 0 };
     const records: Record<string, LoginAttemptRecord> = JSON.parse(raw);
     const userRecord = records[identifier.toLowerCase().trim()];
@@ -142,7 +144,7 @@ export function getLoginSecurityStatus(identifier: string): { isLocked: boolean;
     // Lockout expired, reset attempts if old
     if (now - userRecord.lastAttemptTime > 15 * 60 * 1000) {
       delete records[identifier.toLowerCase().trim()];
-      localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(records));
+      safeSetItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(records));
       return { isLocked: false, remainingSeconds: 0, attempts: 0 };
     }
 
@@ -154,7 +156,7 @@ export function getLoginSecurityStatus(identifier: string): { isLocked: boolean;
 
 export function recordFailedLoginAttempt(identifier: string): { isLocked: boolean; remainingSeconds: number; attempts: number } {
   try {
-    const raw = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
+    const raw = safeGetItem(ATTEMPTS_STORAGE_KEY);
     const records: Record<string, LoginAttemptRecord> = raw ? JSON.parse(raw) : {};
     const key = identifier.toLowerCase().trim();
     const now = Date.now();
@@ -176,7 +178,7 @@ export function recordFailedLoginAttempt(identifier: string): { isLocked: boolea
     }
 
     records[key] = current;
-    localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(records));
+    safeSetItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(records));
 
     return { isLocked, remainingSeconds, attempts: current.attempts };
   } catch (e) {
@@ -186,13 +188,13 @@ export function recordFailedLoginAttempt(identifier: string): { isLocked: boolea
 
 export function resetLoginAttempts(identifier: string): void {
   try {
-    const raw = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
+    const raw = safeGetItem(ATTEMPTS_STORAGE_KEY);
     if (!raw) return;
     const records: Record<string, LoginAttemptRecord> = JSON.parse(raw);
     const key = identifier.toLowerCase().trim();
     if (records[key]) {
       delete records[key];
-      localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(records));
+      safeSetItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(records));
     }
   } catch (e) {}
 }
@@ -212,7 +214,7 @@ const SECURITY_LOGS_KEY = 'gp_security_audit_logs';
 
 export function logSecurityEvent(type: SecurityEventLog['type'], description: string, panchayat?: string): void {
   try {
-    const raw = localStorage.getItem(SECURITY_LOGS_KEY);
+    const raw = safeGetItem(SECURITY_LOGS_KEY);
     const logs: SecurityEventLog[] = raw ? JSON.parse(raw) : [];
 
     const newLog: SecurityEventLog = {
@@ -224,15 +226,15 @@ export function logSecurityEvent(type: SecurityEventLog['type'], description: st
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
     };
 
-    // Keep last 100 security events
-    const updated = [newLog, ...logs].slice(0, 100);
-    localStorage.setItem(SECURITY_LOGS_KEY, JSON.stringify(updated));
+    // Keep last 20 security events (prevent storage overflow)
+    const updated = [newLog, ...logs].slice(0, 20);
+    safeSetItem(SECURITY_LOGS_KEY, JSON.stringify(updated));
   } catch (e) {}
 }
 
 export function getSecurityAuditLogs(): SecurityEventLog[] {
   try {
-    const raw = localStorage.getItem(SECURITY_LOGS_KEY);
+    const raw = safeGetItem(SECURITY_LOGS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) {
     return [];
@@ -241,7 +243,7 @@ export function getSecurityAuditLogs(): SecurityEventLog[] {
 
 export function clearSecurityAuditLogs(): void {
   try {
-    localStorage.removeItem(SECURITY_LOGS_KEY);
+    safeRemoveItem(SECURITY_LOGS_KEY);
   } catch (e) {}
 }
 
